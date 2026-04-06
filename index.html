@@ -3,261 +3,304 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Cloudflare Workers GitHub 文件加速 - 自定义单页面">
-    <title>GitHub 文件加速 · 自部署版</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>GitHub 加速代理服务</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Space+Grotesk:wght@500;600&amp;display=swap');
-        
         :root {
-            --tw-color-primary: #00d4ff;
-        }
-        
-        body {
-            font-family: 'Inter', system_ui, sans-serif;
-        }
-        
-        .title-font {
-            font-family: 'Space Grotesk', sans-serif;
+            --primary-color: #2563eb;
+            --hover-color: #1d4ed8;
+            --bg-gradient: linear-gradient(135deg, #f0fdf4 0%, #e0f2fe 100%);
+            --text-main: #1f2937;
+            --text-muted: #6b7280;
+            --card-bg: rgba(255, 255, 255, 0.85);
         }
 
-        .input-focus {
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        body {
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: var(--bg-gradient);
+            color: var(--text-main);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
-        
-        .input-focus:focus {
-            box-shadow: 0 0 0 4px rgba(0, 212, 255, 0.2);
-            transform: translateY(-1px);
+
+        .container {
+            width: 90%;
+            max-width: 800px;
+            margin: 2rem auto;
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05), 0 4px 10px rgba(0, 0, 0, 0.05);
+            padding: 2.5rem;
+            border: 1px solid rgba(255,255,255,0.5);
         }
-        
-        .gh-card {
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+        h1 {
+            text-align: center;
+            font-size: 2.2rem;
+            margin-top: 0;
+            color: #111827;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
         }
-        
-        .gh-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 25px 25px 0 -10px rgba(0, 212, 255, 0.15);
+
+        h1 svg {
+            width: 36px;
+            height: 36px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: var(--text-muted);
+            margin-bottom: 2rem;
+            font-size: 1.1rem;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 1.5rem;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 1rem 1.5rem;
+            font-size: 1rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus {
+            border-color: var(--primary-color);
+        }
+
+        button {
+            padding: 0 1.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            color: white;
+            background-color: var(--primary-color);
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.1s;
+        }
+
+        button:hover {
+            background-color: var(--hover-color);
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        .result-box {
+            display: none;
+            background: #f3f4f6;
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+            word-break: break-all;
+            border-left: 4px solid var(--primary-color);
+            position: relative;
+        }
+
+        .result-box.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .result-url {
+            font-family: monospace;
+            font-size: 1.1rem;
+            color: #0369a1;
+            margin-bottom: 1rem;
+            display: block;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-secondary {
+            background-color: #4b5563;
+        }
+
+        .btn-secondary:hover {
+            background-color: #374151;
+        }
+
+        .usage-section {
+            margin-top: 2.5rem;
+            border-top: 1px solid #e5e7eb;
+            padding-top: 1.5rem;
+        }
+
+        .usage-section h2 {
+            font-size: 1.4rem;
+            margin-bottom: 1rem;
+            color: #374151;
+        }
+
+        .usage-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+
+        .usage-card {
+            background: #f9fafb;
+            padding: 1rem;
+            border-radius: 8px;
+            border: 1px solid #e5e7eb;
+        }
+
+        .usage-card h3 {
+            margin-top: 0;
+            font-size: 1rem;
+            color: #111827;
+            margin-bottom: 0.5rem;
+        }
+
+        .usage-card code {
+            background: #e5e7eb;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.9rem;
+            color: #be185d;
+            word-break: break-all;
+            display: inline-block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @media (max-width: 600px) {
+            .input-group {
+                flex-direction: column;
+            }
+            button {
+                padding: 1rem;
+            }
         }
     </style>
 </head>
-<body class="bg-zinc-950 text-white min-h-screen flex flex-col">
-    <!-- 顶部导航 -->
-    <nav class="border-b border-white/10 bg-zinc-900/80 backdrop-blur-lg sticky top-0 z-50">
-        <div class="max-w-5xl mx-auto px-6 py-5 flex items-center justify-between">
-            <div class="flex items-center gap-x-3">
-                <div class="w-9 h-9 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-2xl flex items-center justify-center text-2xl shadow-inner">🐙</div>
-                <h1 class="title-font text-3xl tracking-[-1px]">GH Proxy</h1>
+<body>
+
+    <div class="container">
+        <h1>
+            <svg viewBox="0 0 24 24" fill="currentColor">
+                <path fill-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clip-rule="evenodd"/>
+            </svg>
+            GitHub 文件加速
+        </h1>
+        <p class="subtitle">输入 GitHub 的文件、Release、Gist 或仓库地址，一键生成加速链接</p>
+
+        <div class="input-group">
+            <input type="text" id="urlInput" placeholder="请输入 GitHub 链接，例如: https://github.com/hunshcn/gh-proxy" autocomplete="off">
+            <button onclick="generateProxyUrl()">生成加速链接</button>
+        </div>
+
+        <div id="resultBox" class="result-box">
+            <strong>🚀 你的加速链接：</strong>
+            <a id="resultUrl" class="result-url" href="#" target="_blank"></a>
+            <div class="btn-group">
+                <button onclick="copyUrl()">复制链接</button>
+                <button class="btn-secondary" onclick="openUrl()">直接打开</button>
             </div>
-            <div class="flex items-center gap-x-6 text-sm">
-                <a href="https://github.com/hunshcn/gh-proxy" target="_blank" 
-                   class="flex items-center gap-x-1 hover:text-cyan-400 transition-colors">
-                    <span class="font-medium">原项目</span>
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L9 17" />
-                    </svg>
-                </a>
-                <div class="px-3 py-1 text-xs font-medium bg-emerald-400/10 text-emerald-400 rounded-3xl flex items-center gap-x-1">
-                    <div class="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
-                    正常运行
+        </div>
+
+        <div class="usage-section">
+            <h2>📖 使用说明</h2>
+            <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 1rem;">
+                本代理基于 Cloudflare Workers 构建。你只需在原 GitHub 链接前加上 <strong>本站域名/</strong> 即可。
+            </p>
+            <div class="usage-grid">
+                <div class="usage-card">
+                    <h3>📦 Releases 下载加速</h3>
+                    <code>https://当前域名/https://github.com/user/repo/releases/download/v1.0/file.zip</code>
+                </div>
+                <div class="usage-card">
+                    <h3>📄 Raw 源码加速</h3>
+                    <code>https://当前域名/https://raw.githubusercontent.com/user/repo/branch/file.txt</code>
+                </div>
+                <div class="usage-card">
+                    <h3>⬇️ Git Clone 加速</h3>
+                    <code>git clone https://当前域名/https://github.com/user/repo.git</code>
+                </div>
+                <div class="usage-card">
+                    <h3>📝 Gist 加速</h3>
+                    <code>https://当前域名/https://gist.githubusercontent.com/user/gistid/raw/file.txt</code>
                 </div>
             </div>
         </div>
-    </nav>
-
-    <main class="flex-1 flex items-center justify-center px-6 py-12">
-        <div class="max-w-2xl w-full mx-auto">
-            
-            <!-- 主标题 -->
-            <div class="text-center mb-10">
-                <div class="inline-flex items-center gap-x-2 bg-white/5 text-cyan-400 text-sm font-medium px-5 py-2 rounded-3xl mb-6">
-                    ⚡ Cloudflare Workers
-                </div>
-                <h2 class="title-font text-6xl md:text-7xl font-semibold tracking-[-2px] leading-none mb-4">
-                    GitHub 文件加速
-                </h2>
-                <p class="text-2xl text-zinc-400 max-w-md mx-auto">
-                    再也不用等 GitHub 龟速下载了
-                </p>
-                <p class="text-zinc-500 mt-2 text-sm">支持 Releases / Archive / Raw / Blob / Tags 等全部路径</p>
-            </div>
-
-            <!-- 输入框 -->
-            <form id="proxy-form" class="relative group mb-12">
-                <div class="relative">
-                    <input 
-                        id="url-input"
-                        type="text"
-                        placeholder="粘贴 GitHub 完整链接，例如：https://github.com/hunshcn/gh-proxy/archive/master.zip"
-                        class="input-focus w-full bg-white/5 border border-white/10 focus:border-cyan-400 rounded-3xl px-8 py-7 text-lg placeholder:text-zinc-500 outline-none text-white"
-                    >
-                    <button 
-                        type="submit"
-                        class="absolute right-3 top-1/2 -translate-y-1/2 bg-gradient-to-r from-cyan-400 to-blue-500 hover:from-cyan-300 hover:to-blue-400 text-white font-semibold px-10 py-4 rounded-3xl flex items-center gap-x-2 transition-all active:scale-95 shadow-xl shadow-cyan-500/30">
-                        <span>立即加速</span>
-                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7-7 7" />
-                        </svg>
-                    </button>
-                </div>
-            </form>
-
-            <!-- 示例卡片 -->
-            <div class="mb-12">
-                <p class="text-zinc-400 text-sm font-medium mb-4 flex items-center gap-x-2">
-                    <span>快速示例</span>
-                    <span class="flex-1 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent"></span>
-                </p>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4" id="examples">
-                    <!-- JS 动态生成 -->
-                </div>
-            </div>
-
-            <!-- 使用说明 -->
-            <div class="bg-white/5 border border-white/10 rounded-3xl p-8 text-sm">
-                <h3 class="font-semibold mb-4 flex items-center gap-x-2 text-cyan-400">
-                    <span>如何使用本页面？</span>
-                </h3>
-                <ol class="space-y-4 text-zinc-400">
-                    <li class="flex gap-x-4">
-                        <span class="font-mono bg-white/10 w-6 h-6 rounded-2xl flex items-center justify-center text-xs shrink-0">1</span>
-                        <div>部署 Workers 后，将 <span class="font-medium text-white">ASSET_URL</span> 修改为本页面托管地址（例如你的 GitHub Pages）</div>
-                    </li>
-                    <li class="flex gap-x-4">
-                        <span class="font-mono bg-white/10 w-6 h-6 rounded-2xl flex items-center justify-center text-xs shrink-0">2</span>
-                        <div>访问你的 Workers 域名（根路径），就会看到这个自定义界面</div>
-                    </li>
-                    <li class="flex gap-x-4">
-                        <span class="font-mono bg-white/10 w-6 h-6 rounded-2xl flex items-center justify-center text-xs shrink-0">3</span>
-                        <div>粘贴任意 GitHub 链接 → 点击「立即加速」即可高速下载</div>
-                    </li>
-                </ol>
-                <div class="mt-6 pt-6 border-t border-white/10 text-xs text-zinc-500 flex items-center justify-between">
-                    <div>PREFIX 默认 <span class="font-mono text-emerald-400">/</span>，自定义路由请同步修改 Workers 代码</div>
-                    <a href="https://github.com/hunshcn/gh-proxy" target="_blank" class="hover:text-white flex items-center gap-x-1">
-                        查看原项目 
-                        <span aria-hidden="true">→</span>
-                    </a>
-                </div>
-            </div>
-        </div>
-    </main>
-
-    <!-- 页脚 -->
-    <footer class="py-8 text-center text-xs text-zinc-500 border-t border-white/10">
-        <div class="max-w-5xl mx-auto px-6">
-            <p>本页面为自定义单页面 · 由你完全掌控外观与功能</p>
-            <p class="mt-1">Powered by <a href="https://github.com/hunshcn/gh-proxy" class="hover:text-cyan-400">hunshcn/gh-proxy</a> + Cloudflare Workers</p>
-            <p class="mt-4 text-[10px]">Made with ❤️ for faster GitHub downloads</p>
-        </div>
-    </footer>
+    </div>
 
     <script>
-        // Tailwind 初始化
-        function initTailwind() {
-            tailwind.config = {
-                content: [],
-                theme: {
-                    extend: {}
-                }
-            }
-        }
+        // 自动获取当前域名（包括端口和 Worker 中配置的 PREFIX，假设为 /）
+        // 如果你的 worker PREFIX 改了，请在此处同步修改
+        const PREFIX = '/'; 
+        const proxyDomain = window.location.origin + PREFIX;
 
-        // 示例数据
-        const examples = [
-            {
-                name: "最新 Release",
-                url: "https://github.com/hunshcn/gh-proxy/releases/latest",
-                desc: "自动跳转最新版本"
-            },
-            {
-                name: "ZIP 源码包",
-                url: "https://github.com/hunshcn/gh-proxy/archive/refs/heads/master.zip",
-                desc: "主分支源码"
-            },
-            {
-                name: "Raw 文件",
-                url: "https://raw.githubusercontent.com/hunshcn/gh-proxy/master/index.js",
-                desc: "直接查看源代码"
-            },
-            {
-                name: "Release 下载",
-                url: "https://github.com/hunshcn/gh-proxy/releases/download/1.0.0/gh-proxy.zip",
-                desc: "二进制文件加速"
-            }
-        ]
+        function generateProxyUrl() {
+            let input = document.getElementById('urlInput').value.trim();
+            const resultBox = document.getElementById('resultBox');
+            const resultUrl = document.getElementById('resultUrl');
 
-        // 渲染示例卡片
-        function renderExamples() {
-            const container = document.getElementById('examples')
-            examples.forEach(ex => {
-                const card = document.createElement('button')
-                card.className = `gh-card w-full text-left bg-white/5 hover:bg-white/10 border border-white/10 rounded-3xl p-6 group`
-                card.innerHTML = `
-                    <div class="flex justify-between items-start">
-                        <div>
-                            <div class="font-medium text-lg group-hover:text-cyan-400 transition-colors">${ex.name}</div>
-                            <div class="text-zinc-400 text-sm mt-1 line-clamp-2">${ex.desc}</div>
-                            <div class="font-mono text-[10px] text-zinc-500 mt-4 break-all">${ex.url}</div>
-                        </div>
-                        <div class="text-cyan-400 text-3xl transition-transform group-active:rotate-45">→</div>
-                    </div>
-                `
-                card.onclick = () => proxy(ex.url)
-                container.appendChild(card)
-            })
-        }
-
-        // 执行代理（核心逻辑）
-        function proxy(githubUrl) {
-            const input = githubUrl || document.getElementById('url-input').value.trim()
-            
             if (!input) {
-                alert('请输入 GitHub 链接！')
-                return
+                alert('请先输入 GitHub 链接！');
+                return;
             }
 
-            // 自动补全 https://
-            let url = input
-            if (!url.startsWith('http://') && !url.startsWith('https://')) {
-                url = 'https://' + url
+            // 简单处理：如果用户没有输入 http/https，自动补全
+            if (!/^https?:\/\//i.test(input)) {
+                input = 'https://' + input;
             }
 
-            // 关键：使用 ?q= 参数（兼容任何 PREFIX 设置！）
-            // 不需要手动拼接 PREFIX，Worker 会自动处理
-            const current = new URL(window.location.href)
-            current.searchParams.set('q', url)
+            // 验证是否包含 github 关键字
+            if (!input.includes('github.com') && !input.includes('githubusercontent.com')) {
+                alert('请输入有效的 GitHub 相关链接！');
+                return;
+            }
+
+            const finalUrl = proxyDomain + input;
             
-            // 跳转（Worker 会 301 重定向到正确路径）
-            window.location.href = current.toString()
+            resultUrl.textContent = finalUrl;
+            resultUrl.href = finalUrl;
+            resultBox.classList.add('active');
         }
 
-        // 表单提交
-        function initForm() {
-            const form = document.getElementById('proxy-form')
-            form.addEventListener('submit', function(e) {
-                e.preventDefault()
-                proxy()
-            })
-            
-            // Enter 键支持
-            const input = document.getElementById('url-input')
-            input.addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    e.preventDefault()
-                    proxy()
-                }
-            })
+        function copyUrl() {
+            const url = document.getElementById('resultUrl').textContent;
+            navigator.clipboard.writeText(url).then(() => {
+                alert('链接已复制到剪贴板！');
+            }).catch(err => {
+                alert('复制失败，请手动选择复制。');
+            });
         }
 
-        // 页面加载完成
-        window.onload = function() {
-            initTailwind()
-            renderExamples()
-            initForm()
-            
-            // 友好提示：如果直接打开本 HTML 文件（非通过 Worker）
-            console.log('%c✅ 自定义 GitHub Proxy 单页面加载成功！\n请将此 index.html 上传到 GitHub Pages 或任意静态托管服务，然后在 Workers 中设置 ASSET_URL 为本页面 URL。', 'color:#00d4ff; font-family:monospace')
+        function openUrl() {
+            const url = document.getElementById('resultUrl').href;
+            window.open(url, '_blank');
         }
+
+        // 支持回车键触发生成
+        document.getElementById('urlInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                generateProxyUrl();
+            }
+        });
     </script>
 </body>
 </html>
